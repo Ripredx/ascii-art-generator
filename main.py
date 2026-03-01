@@ -1222,6 +1222,31 @@ class ASCIIArtGenerator(QMainWindow):
     def _status(self, text):
         self.status_lbl.setText(text)
 
+    # ─── Canvas Reset ───
+
+    def _reset_canvas_state(self):
+        """Clear all previous input state so sources don't overlap."""
+        # Stop GIF animation
+        self.gif_timer.stop()
+        self.is_animating = False
+        self.gif_frames = []
+        self.gif_frame_index = 0
+        self.gif_stop_btn.setVisible(False)
+
+        # Stop webcam
+        if self.webcam_active:
+            self.webcam_active = False
+            self.webcam_btn.setText("📷 Webcam")
+            if self.cap:
+                self.cap.release()
+                self.cap = None
+            self.webcam_timer.stop()
+
+        # Clear canvas content
+        self.current_image = None
+        self.current_ascii = ""
+        self._image_canvas.setPlainText("")
+
     # ─── Image Mode ───
 
     def load_image(self):
@@ -1230,6 +1255,7 @@ class ASCIIArtGenerator(QMainWindow):
         )
         if fp:
             try:
+                self._reset_canvas_state()
                 img = Image.open(fp)
                 self.current_image = img.convert("RGB")
                 self.update_preview()
@@ -1260,6 +1286,7 @@ class ASCIIArtGenerator(QMainWindow):
         )
         if not fp:
             return
+        self._reset_canvas_state()
         try:
             gif = Image.open(fp)
             self.gif_frames = []
@@ -1440,6 +1467,7 @@ class ASCIIArtGenerator(QMainWindow):
 
     def toggle_webcam(self):
         if not self.webcam_active:
+            self._reset_canvas_state()
             self.cap = cv2.VideoCapture(0)
             if not self.cap.isOpened():
                 QMessageBox.critical(self, "Error", "Webcam not found.")
